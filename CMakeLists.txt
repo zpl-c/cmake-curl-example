@@ -6,14 +6,24 @@ PROJECT(test-curl
 
 # Prefer static libs over shared lib
 LIST(REVERSE CMAKE_FIND_LIBRARY_SUFFIXES)
-#========== Add CPM package manager ================= 
-set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM.cmake")
-set(CPM_VERSION 0.18)
+set(CPM_DOWNLOAD_VERSION 0.32.0)
 
-if(NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
-	message(STATUS "Downloading CPM.cmake")
-	file(DOWNLOAD https://github.com/TheLartians/CPM.cmake/releases/download/v${CPM_VERSION}/CPM.cmake ${CPM_DOWNLOAD_LOCATION})
-endif(NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
+if(CPM_SOURCE_CACHE)
+  set(CPM_DOWNLOAD_LOCATION "${CPM_SOURCE_CACHE}/cpm/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+elseif(DEFINED ENV{CPM_SOURCE_CACHE})
+  set(CPM_DOWNLOAD_LOCATION "$ENV{CPM_SOURCE_CACHE}/cpm/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+else()
+  set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+endif()
+
+if(NOT (EXISTS ${CPM_DOWNLOAD_LOCATION}))
+  message(STATUS "Downloading CPM.cmake to ${CPM_DOWNLOAD_LOCATION}")
+  file(DOWNLOAD
+       https://github.com/TheLartians/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
+       ${CPM_DOWNLOAD_LOCATION}
+  )
+endif()
+
 include(${CPM_DOWNLOAD_LOCATION})
 
 ##========== Add dependency =================
@@ -40,35 +50,11 @@ if(ENABLE_OPENSSL_FROM_SOURCE)
 
 	set(OPENSSL_ROOT_DIR "${BUILD_OPENSSL_INSTALL_DIR}" CACHE INTERNAL "OPENSSL ROOT DIR")
 	message(MESSAGE "Setting OPENSSL ROOT DIR to newly built OpenSSL ${OPENSSL_ROOT_DIR}")
-else()
-	# set(OPENSSL_LIBRARIES "/usr/local/opt/openssl/lib" CACHE INTERNAL "OPENSSL lib dir")
 endif()
 
 if (MSVC)
-	set(CURL_PLATFORM_OPTIONS "CMAKE_USE_WINSSL ON;CMAKE_USE_OPENSSL OFF")
+	set(CURL_PLATFORM_OPTIONS "CMAKE_USE_SCHANNEL ON;CMAKE_USE_OPENSSL OFF")
 elseif(APPLE)
-	# set(OPENSSL_LIBRARIES "/usr/local/opt/openssl/lib" CACHE INTERNAL "OPENSSL lib dir")
-	# set(ENV{OPENSSL_ROOT_DIR} "/usr/local/opt/openssl")
-	# find_library(OPENSSL_CRYPTO_LIB
-	# 	NAME libcrypto.a crypto.a
-	# 	HINTS ${OPENSSL_ROOT_DIR}
-	# 	PATH_SUFFIXES
-	# 	lib
-	# 	NO_DEFAULT_PATH)
-	# find_library(OPENSSL_SSL_LIB
-	# 	NAME ssl.a libssl.a
-	# 	HINTS ${OPENSSL_ROOT_DIR}
-	# 	PATH_SUFFIXES
-	# 	lib
-	# 	NO_DEFAULT_PATH)
-	# set(OPENSSL_LIBS ${OPENSSL_SSL_LIB} ${OPENSSL_CRYPTO_LIB})
-	# message(STATUS "OPENSSL LIB DIR ${OPENSSL_LIBRARIES}, INCLUDE DIR ${OPENSSL_INCLUDE_DIR}, LIBs ${OPENSSL_LIBS}")
-	# add_library(libssl INTERFACE)
-	# add_library(libcrypto INTERFACE)
-	# target_link_libraries(libcrypto INTERFACE ${OPENSSL_CRYPTO_LIB})
-	# target_link_libraries(libssl INTERFACE ${OPENSSL_SSL_LIB})
-	# target_include_directories(libssl INTERFACE ${OPENSSL_INCLUDE_DIR})
-	# target_include_directories(libcrypto INTERFACE ${OPENSSL_INCLUDE_DIR})
 	set(CURL_PLATFORM_OPTIONS "CMAKE_USE_SECTRANSP OFF;CMAKE_USE_OPENSSL ON")
 else()
 	set(CURL_PLATFORM_OPTIONS "CMAKE_USE_OPENSSL ON")
@@ -76,8 +62,8 @@ endif()
 
 CPMAddPackage(
 		NAME curl
-		VERSION 7.67.0
-		URL https://github.com/curl/curl/releases/download/curl-7_67_0/curl-7.67.0.tar.gz
+		VERSION 7.77.0
+		URL https://github.com/curl/curl/releases/download/curl-7_77_0/curl-7.77.0.tar.gz
 		OPTIONS
 		"CURL_STATICLIB ON"
 		"BUILD_CURL_EXE OFF"
